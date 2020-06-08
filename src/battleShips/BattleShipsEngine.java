@@ -3,7 +3,7 @@ package battleShips;
 import java.io.IOException;
 import java.util.Random;
 
-public class BattleShipsEngine implements BattleShipsReceive, BattleShipsSender {
+public class BattleShipsEngine implements BattleShipsReceiver, BattleShipsSender {
     public static final int UNDEFINED_DICE = -1;
 
     private BattleShipsStatus status;

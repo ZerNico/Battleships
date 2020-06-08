@@ -2,7 +2,7 @@ package battleShips;
 
 import java.io.IOException;
 
-public interface BattleShipsReceive {
+public interface BattleShipsReceiver {
     /**
      * allowed in status START, goes to SINKS or SINKR
      * @param random
