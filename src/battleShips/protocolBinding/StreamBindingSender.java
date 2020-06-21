@@ -1,7 +1,7 @@
 package battleShips.protocolBinding;
 
-import battleShips.BattleShipsSender;
 import battleShips.StatusException;
+import battleShips.BattleShipsSender;
 
 import java.io.DataOutputStream;
 import java.io.IOException;

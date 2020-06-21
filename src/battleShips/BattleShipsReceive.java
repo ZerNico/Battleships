@@ -2,9 +2,9 @@ package battleShips;
 
 import java.io.IOException;
 
-public interface BattleShipsReceiver {
+public interface BattleShipsReceive {
     /**
-     * allowed in status START, goes to SINKS or SINKR
+     * erlaubt im Zustand START. führt zu Activ oder passiv
      * @param random
      * @throws IOException
      */
@@ -16,12 +16,12 @@ public interface BattleShipsReceiver {
      * @param column
      * @throws IOException
      */
-    void receiveCoordinate(int line, int column) throws IOException, StatusException;
+    void receiveCoordinate(int line, int column) throws IOException, StatusException, BattleShipsException;
 
     /**
      * allowed in status CONFIRMR, goes to SINKS or END
      * @param hit
      * @throws IOException
      */
-    void recieveConfirm(int hit) throws IOException, StatusException;
+    void receiveConfirm(int hit) throws IOException, StatusException;
 }

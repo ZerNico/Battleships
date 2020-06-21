@@ -5,10 +5,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class BattleShipsTest {
+public class TicTacToeTest {
 
     @Test
-    public void usageTest() throws IOException, StatusException, BattleShipsException {
+    public void usageTest() throws BattleShipsException, StatusException, IOException {
         ShortCut sender1 = new ShortCut();
         BattleShipsEngine game1 = new BattleShipsEngine(sender1);
 
@@ -17,16 +17,15 @@ public class BattleShipsTest {
 
         // connect both games
         sender1.setReceiver(game2);
-        sender1.setReceiver(game1);
+        sender2.setReceiver(game1);
 
         // test methods
         game1.doDice();
         game2.doDice();
 
-        BattleShipsUsage shootingGame = game1.status() == BattleShipsStatus.SINKS ? game1 : game2;
+        BattleShipsUsage activeGame = game1.status() == BattleShipsStatus.SINKS ? game1 : game2;
 
-        shootingGame.coordinate(0, 0);
-        Assert.assertSame(game1.status(), BattleShipsStatus.CONFIRMR);
-
+        activeGame.coordinate(0,0);
+        Assert.assertNotSame(activeGame.status(), BattleShipsStatus.CONFIRMR);
     }
 }

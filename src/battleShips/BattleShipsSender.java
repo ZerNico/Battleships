@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public interface BattleShipsSender {
     /**
-     * allowed in status START
+     * erlaubt im Zustand START.
      * @param random
      * @throws IOException
      */
@@ -16,7 +16,7 @@ public interface BattleShipsSender {
      * @param column
      * @throws IOException
      */
-    void sendCoordinate(int line, int column) throws IOException, StatusException;
+    void sendCoordinate(int line, int column) throws IOException, StatusException, BattleShipsException;
 
     /**
      * allowed in status CONFIRMS, goes to SINKR

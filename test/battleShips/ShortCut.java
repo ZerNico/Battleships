@@ -3,10 +3,9 @@ package battleShips;
 import java.io.IOException;
 
 public class ShortCut implements BattleShipsSender {
+    private BattleShipsReceive receiver;
 
-    private BattleShipsReceiver receiver;
-
-    public void setReceiver(BattleShipsReceiver receiver) {
+    public void setReceiver(BattleShipsReceive receiver) {
         this.receiver = receiver;
     }
 
@@ -16,12 +15,12 @@ public class ShortCut implements BattleShipsSender {
     }
 
     @Override
-    public void sendCoordinate(int line, int column) throws IOException, StatusException {
+    public void sendCoordinate(int line, int column) throws IOException, StatusException, BattleShipsException {
         this.receiver.receiveCoordinate(line, column);
     }
 
     @Override
     public void sendConfirm(int hit) throws IOException, StatusException {
-        this.receiver.recieveConfirm(hit);
+
     }
 }

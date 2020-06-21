@@ -3,29 +3,45 @@ package battleShips;
 import java.io.IOException;
 import java.util.Random;
 
-public class BattleShipsEngine implements BattleShipsReceiver, BattleShipsUsage {
+public class BattleShipsEngine implements BattleShipsReceive, BattleShipsUsage {
     public static final int UNDEFINED_DICE = -1;
     private final BattleShipsSender sender;
+    public static final int DIM = 10;
+
+    BattleShipsBoardField[][] myBoard = new BattleShipsBoardField[DIM][DIM];
+    BattleShipsBoardField[][] enemyBoard = new BattleShipsBoardField[DIM][DIM];
 
     private BattleShipsStatus status;
     private int sentDice = UNDEFINED_DICE;
     private int receivedRandom;
 
-
     public BattleShipsEngine(BattleShipsSender sender) {
         this.status = BattleShipsStatus.START;
         this.sender = sender;
+
+        for(int i = 0; i < DIM; i++) {
+            for(int j = 0; j < DIM; j++) {
+                this.myBoard[i][j] = BattleShipsBoardField.SHIP;
+                this.enemyBoard[i][j] = BattleShipsBoardField.UNKNOWN;
+            }
+        }
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                  remote engine support                                     //
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Override
     public void receiveDice(int random) throws IOException, StatusException {
-        if (this.status != BattleShipsStatus.START && this.status != BattleShipsStatus.DICE_SENT) {
+        if( this.status != BattleShipsStatus.START
+            && this.status != BattleShipsStatus.DICE_SENT
+        ) {
             throw new StatusException();
         }
 
         this.receivedRandom = random;
 
-        // higher value -> SINKR, lower -> SINKS, same -> send dice again
+        // höhere zahl - aktiv, kleinere -> passiv, gleiche zahl noch einmal.
         if(this.status == BattleShipsStatus.DICE_SENT) {
             this.decideWhoStarts();
         } else {
@@ -34,56 +50,67 @@ public class BattleShipsEngine implements BattleShipsReceiver, BattleShipsUsage 
     }
 
     @Override
-    public void receiveCoordinate(int line, int column) throws IOException, StatusException {
-        if (this.status != BattleShipsStatus.SINKR) {
+    public void receiveCoordinate(int line, int column) throws IOException, StatusException, BattleShipsException {
+        if(this.status != BattleShipsStatus.SINKR) {
             throw new StatusException();
         }
+
+        // set stone
+
+        // check if allowed
+        this.checkValidCoordinate(line, column);
+
+        this.myBoard[line][column] = this.myBoard[line][column] == BattleShipsBoardField.SHIP ? BattleShipsBoardField.HITS : BattleShipsBoardField.HITW;
+
+        this.checkGameOver();
     }
 
     @Override
-    public void recieveConfirm(int hit) throws IOException, StatusException {
-        if (this.status != BattleShipsStatus.CONFIRMR) {
-            throw new StatusException();
+    public void receiveConfirm(int hit) throws IOException, StatusException {
+
+    }
+
+    private void checkValidCoordinate(int line, int column) throws BattleShipsException {
+        // coordinates correct
+        if (line >= DIM || column >= DIM || line < 0 || column < 0) {
+            throw new BattleShipsException("wrong parameters");
+        }
+
+        if (this.myBoard[line][column] == BattleShipsBoardField.HITS
+                || this.myBoard[line][column] == BattleShipsBoardField.HITW ) {
+            throw new BattleShipsException("position already shot");
         }
     }
 
-    /*
-    @Override
-    public void sendCoordinate(int line, int column) throws IOException, StatusException {
-        if (this.status != BattleShipsStatus.SINKS) {
+    public void sendCoordinate(int line, int column) throws IOException, StatusException, BattleShipsException {
+        if(this.status != BattleShipsStatus.SINKS) {
             throw new StatusException();
         }
-    }
 
-    @Override
-    public void sendConfirm(int hit) throws IOException, StatusException {
-        if (this.status != BattleShipsStatus.CONFIRMS) {
-            throw new StatusException();
-        }
+        // send
+        this.sender.sendCoordinate(line, column);
+
+        // end?
+        this.checkGameOver();
     }
-    */
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    //                                   remote engine support                                    //
+    //                                  user interface support                                    //
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Override
     public void doDice() throws StatusException, IOException {
         if(this.status != BattleShipsStatus.START
-                && this.status != BattleShipsStatus.DICE_RECEIVED) {
-            throw new StatusException();
-        }
-        if (this.status != BattleShipsStatus.START) {
+            && this.status != BattleShipsStatus.DICE_RECEIVED) {
             throw new StatusException();
         }
 
         Random r = new Random();
         this.sentDice = r.nextInt();
 
-        // send value via sender
+        // sende den Wert über den Sender
         this.sender.sendDice(this.sentDice);
 
-        this.status = BattleShipsStatus.DICE_SENT;
         if(this.status == BattleShipsStatus.DICE_RECEIVED) {
             this.decideWhoStarts();
         } else {
@@ -101,14 +128,54 @@ public class BattleShipsEngine implements BattleShipsReceiver, BattleShipsUsage 
         }
     }
 
-
-    @Override
     public BattleShipsStatus status() {
         return this.status;
     }
 
     @Override
-    public void coordinate(int line, int column) throws BattleShipsException, StatusException {
+    public void coordinate(int line, int column) throws BattleShipsException, StatusException, IOException {
+        this.checkValidEnemyCoordinate(line, column);
 
+        // valid data
+        //this.board[line][column] = this.myStone;
+
+        // send
+        this.sendCoordinate(line, column);
+    }
+
+    @Override
+    public void confirm(int hit) throws BattleShipsException, StatusException, IOException {
+
+    }
+
+    private void checkValidEnemyCoordinate(int line, int column) throws BattleShipsException {
+        // coordinates correct
+        if (line >= DIM || column >= DIM || line < 0 || column < 0) {
+            throw new BattleShipsException("wrong parameters");
+        }
+
+        if (this.enemyBoard[line][column] != BattleShipsBoardField.UNKNOWN ) {
+            throw new BattleShipsException("position already shot");
+        }
+    }
+
+    private void checkGameOver() {
+        // find three in a row
+
+        int myHits = 0;
+        int enemyHits = 0;
+
+        for(int i = 0; i < DIM; i++) {
+            for(int j = 0; j < DIM; j++) {
+                if (enemyBoard[i][j] == BattleShipsBoardField.HITW) {
+                    myHits++;
+                }
+                if (myBoard[i][j] == BattleShipsBoardField.HITW) {
+                    enemyHits++;
+                }
+            }
+        }
+
+        if(enemyHits >= 30 || myHits >= 30) this.status = BattleShipsStatus.END;
     }
 }
